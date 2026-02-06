@@ -1218,6 +1218,14 @@ class HomeShell extends StatelessWidget {
           ],
         ),
         actions: [
+           if (app.nav == 2)
+  IconButton(
+    tooltip: 'Forumda Ara',
+    icon: const Icon(Icons.search),
+    onPressed: () => Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => ForumSearchScreen(app: app)),
+    ),
+  ),
           IconButton(
             tooltip: 'Bildirimler',
             icon: const Icon(Icons.notifications_none),
@@ -3731,6 +3739,82 @@ class _AdminLogsTab extends StatelessWidget {
         const SizedBox(height: 10),
         const _SoftFooterNote(text: 'Prod’da loglar backend’de tutulmalı ve yetkilendirilmelidir.'),
       ],
+    );
+  }
+}
+/* =========================================================
+  FORUM ARAMA (AYRI EKRAN) - MEVCUDU DEĞİŞTİRMEZ
+========================================================= */
+
+class ForumSearchScreen extends StatefulWidget {
+  const ForumSearchScreen({super.key, required this.app});
+  final AppState app;
+
+  @override
+  State<ForumSearchScreen> createState() => _ForumSearchScreenState();
+}
+
+class _ForumSearchScreenState extends State<ForumSearchScreen> {
+  String query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final app = widget.app;
+    final postsAll = app.forum.listVisible();
+
+    final posts = query.trim().isEmpty
+        ? postsAll
+        : postsAll.where((p) {
+            final q = _norm(query);
+            return _norm(p.title).contains(q) ||
+                _norm(p.content).contains(q) ||
+                _norm(p.username).contains(q);
+          }).toList();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Forumda Ara'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.only(top: 8, bottom: 24),
+        children: [
+          const _SectionHeader(
+            title: 'Arama',
+            subtitle: 'Başlık • içerik • kullanıcı',
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+            child: TextField(
+              autofocus: true,
+              decoration: const InputDecoration(
+                prefixIcon: Icon(Icons.search),
+                hintText: 'örn: transfer, derbi, gs, fb...',
+              ),
+              onChanged: (v) => setState(() => query = v),
+            ),
+          ),
+          if (posts.isEmpty)
+            const Center(child: Padding(padding: EdgeInsets.all(24), child: Text('Sonuç bulunamadı.')))
+          else
+            for (final p in posts)
+              Card(
+                child: ListTile(
+                  leading: Icon(p.pinned ? Icons.push_pin : Icons.article_outlined),
+                  title: Row(
+                    children: [
+                      if (p.pinned) const Text('📌 '),
+                      Expanded(child: Text(p.title, style: const TextStyle(fontWeight: FontWeight.w900))),
+                    ],
+                  ),
+                  subtitle: Text('@${p.username} • ${_ddmmyyyy(p.createdAt)} • ${_hhmm(p.createdAt)}'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => PostDetailScreen(app: app, post: p)),
+                  ),
+                ),
+              ),
+        ],
+      ),
     );
   }
 }
